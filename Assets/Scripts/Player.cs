@@ -59,12 +59,25 @@ public class Player : MonoBehaviour {
     private bool canDash = true;
     private bool atackable = true;
     private bool inventoryOpen = false;
+    private bool healingDown = false;
+    private bool canHeal = true;
 
     // Start is called before the first frame update
     void Start() {
         ps.Stop();
         bc.enabled = false;
         inventory.SetActive(false);
+    }
+
+    private void LateUpdate() {
+        //healthBar.localScale = new Vector2(health / 10, 1);
+        //ocBar.localScale = new Vector2(overClock / 10, 1);
+
+        Vector2 tempH = new Vector2(health / 10, 1);
+        Vector2 tempOC = new Vector2(overClock / 10, 1);
+
+        healthBar.localScale = Vector2.Lerp(healthBar.localScale, tempH, 4f * Time.deltaTime);
+        ocBar.localScale = Vector2.Lerp(ocBar.localScale, tempOC, 4f * Time.deltaTime);
     }
 
     // Update is called once per frame
@@ -74,9 +87,6 @@ public class Player : MonoBehaviour {
                 hammerIsUnlocked = true;
             }
         }
-
-        healthBar.localScale = new Vector2(health / 10, 1);
-        ocBar.localScale = new Vector2(overClock / 10, 1);
 
         if(grounded == true) {
             extraOC = false;
@@ -221,6 +231,45 @@ public class Player : MonoBehaviour {
                 inventory.SetActive(false);
             }
         }
+
+        //heal
+        if(canHeal) {
+            if(Input.GetKeyDown(KeyCode.A)) {
+                healingDown = true;
+                StartCoroutine(Heal());
+            } else if(Input.GetKeyUp(KeyCode.A)) {
+                healingDown = false;
+                StopCoroutine(Heal());
+            }
+        }
+    }
+
+    IEnumerator Heal() {
+        if(canHeal) {
+            if(overClock >= 25f) {
+                if(health <= 75) {
+                    yield return new WaitForSeconds(1f);
+                    if(healingDown) {
+                        overClock -= 25f;
+                        health += 25;
+                        canHeal = false;
+                    }
+                } else {
+                    if(health < 100) {
+                        yield return new WaitForSeconds(1f);
+                        if(healingDown) {
+                            overClock -= 100 - health;
+                            health = 100;
+                            canHeal = false;
+                        }
+                    }
+                }
+                
+            }
+        }
+
+        yield return new WaitForSeconds(1f);
+        canHeal = true;
     }
 
     IEnumerator DashCooldown() {
